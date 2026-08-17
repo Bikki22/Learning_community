@@ -10,6 +10,9 @@ const envSchema = z.object({
     .enum(["development", "production", "test"])
     .default("development"),
   API_PREFIX: z.string().default("/api/v1"),
+  CLERK_PUBLISHABLE_KEY: z.string().min(1),
+  CLERK_SECRET_KEY: z.string().min(1),
+  CLERK_WEBHOOK_SIGNING_SECRET: z.string().min(1),
 });
 
 export type RawEnv = z.infer<typeof envSchema>;

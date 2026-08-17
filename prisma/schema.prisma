@@ -12,8 +12,21 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  MEMBER
+  MODERATOR
+  ADMIN
+}
+
 model User {
-  id       String @id @default(cuid())
-  email    String @unique
-  password String
+  id             String    @id @default(cuid())
+  email          String    @unique
+  clerkId        String    @unique
+  firstName      String?
+  lastName       String?
+  imageUrl       String?
+  role           Role      @default(MEMBER)
+  clerkUpdatedAt DateTime  @default(now())
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
 }
