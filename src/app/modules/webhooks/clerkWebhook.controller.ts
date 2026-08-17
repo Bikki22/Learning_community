@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { Webhook } from "svix";
 import { env } from "../../config/env";
-import { UserRepository } from "../../repository/user.repository";
+import { UserRepository } from "../users/user.repository";
 import { AsyncHandler } from "../../lib/AsyncHandler";
 import { ApiResponse } from "../../lib/ApiResponse";
 import { ApiError } from "../../lib/ApiError";

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { UserRepository } from "../../repository/user.repository";
+import { UserRepository } from "./user.repository";
 import { AsyncHandler } from "../../lib/AsyncHandler";
 import { ApiResponse } from "../../lib/ApiResponse";
 import { ApiError } from "../../lib/ApiError";
