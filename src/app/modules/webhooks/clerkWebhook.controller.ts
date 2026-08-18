@@ -5,6 +5,7 @@ import { UserRepository } from "../users/user.repository";
 import { AsyncHandler } from "../../lib/AsyncHandler";
 import { ApiResponse } from "../../lib/ApiResponse";
 import { ApiError } from "../../lib/ApiError";
+import logger from "../../lib/logger";
 
 type ClerkWebhookEvent = {
   type: string;
@@ -59,7 +60,7 @@ export class ClerkWebhookController {
         "svix-signature": svixSignature,
       }) as ClerkWebhookEvent;
     } catch (err) {
-      console.error("Webhook signature verification failed:", err);
+      logger.error("Webhook signature verification failed:", { error: err });
       throw new ApiError(400, "Invalid webhook signature");
     }
 

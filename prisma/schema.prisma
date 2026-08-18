@@ -18,15 +18,102 @@ enum Role {
   ADMIN
 }
 
+enum BadgeRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
 model User {
   id             String    @id @default(cuid())
   email          String    @unique
+  username       String?   @unique
   clerkId        String    @unique
   firstName      String?
   lastName       String?
   imageUrl       String?
+  bio            String?
   role           Role      @default(MEMBER)
+  xp             Int       @default(0)
+  streakCount    Int       @default(0)
+  lastActiveAt   DateTime?
   clerkUpdatedAt DateTime  @default(now())
   deletedAt      DateTime?
   createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  // Relations
+  following           Follow[]     @relation("UserFollowing")
+  followers           Follow[]     @relation("UserFollowers")
+  sentFriendships     Friendship[] @relation("UserFriendshipsSent")
+  receivedFriendships Friendship[] @relation("UserFriendshipsReceived")
+  badges              UserBadge[]
+
+  @@index([xp])
+  @@index([createdAt])
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  name        String
+  description String?
+  iconUrl     String?
+  rarity      BadgeRarity @default(COMMON)
+  xpReward    Int         @default(0)
+  condition   String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @default(now()) @updatedAt
+
+  users UserBadge[]
+
+  @@index([isActive])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([badgeId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+model Friendship {
+  id          String           @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @default(now()) @updatedAt
+
+  requester User @relation("UserFriendshipsSent", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("UserFriendshipsReceived", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
 }
