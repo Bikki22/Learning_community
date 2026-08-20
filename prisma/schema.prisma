@@ -36,6 +36,32 @@ enum CommunityMemberRole {
   ADMIN
 }
 
+enum ConversationType {
+  DIRECT
+  GROUP
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  FILE
+  AUDIO
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+enum ParticipantRole {
+  MEMBER
+  ADMIN
+  OWNER
+}
+
 model User {
   id             String    @id @default(cuid())
   email          String    @unique
@@ -66,6 +92,14 @@ model User {
   comments            Comment[]
   postLikes           PostLike[]
   commentLikes        CommentLike[]
+  conversations       ConversationParticipant[]
+  conversationsCreated Conversation[]        @relation("ConversationCreator")
+  messages            Message[]
+  messageReads        MessageReadReceipt[]
+  groupsCreated       Group[]                @relation("GroupCreator")
+  groupMemberships    GroupMember[]
+  groupMessages       GroupMessage[]
+  groupMessageReads   GroupMessageReadReceipt[]
 
   @@index([xp])
   @@index([createdAt])
@@ -246,4 +280,142 @@ model CommentLike {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([commentId, userId])
+}
+
+// ==================== CHAT MODELS ====================
+
+model Conversation {
+  id           String           @id @default(cuid())
+  type         ConversationType @default(DIRECT)
+  createdById  String
+  deletedAt    DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  createdBy    User                     @relation("ConversationCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model ConversationParticipant {
+  id             String          @id @default(cuid())
+  conversationId String
+  userId         String
+  role           ParticipantRole @default(MEMBER)
+  lastReadAt     DateTime?
+  joinedAt       DateTime        @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  conversationId String
+  senderId       String
+  type           MessageType   @default(TEXT)
+  content        String
+  attachmentUrl  String?
+  status         MessageStatus @default(SENT)
+  replyToId      String?
+  editedAt       DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User                @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo      Message?            @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies      Message[]           @relation("MessageReplies")
+  readReceipts MessageReadReceipt[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+model MessageReadReceipt {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId])
+}
+
+model Group {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  createdById String
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdBy User          @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  members   GroupMember[]
+  messages  GroupMessage[]
+
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model GroupMember {
+  id        String          @id @default(cuid())
+  groupId   String
+  userId    String
+  role      ParticipantRole @default(MEMBER)
+  joinedAt  DateTime        @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+model GroupMessage {
+  id            String        @id @default(cuid())
+  groupId       String
+  senderId      String
+  type          MessageType   @default(TEXT)
+  content       String
+  attachmentUrl String?
+  replyToId     String?
+  editedAt      DateTime?
+  deletedAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  group        Group                    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sender       User                     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo      GroupMessage?            @relation("GroupMessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies      GroupMessage[]           @relation("GroupMessageReplies")
+  readReceipts GroupMessageReadReceipt[]
+
+  @@index([groupId, createdAt])
+  @@index([senderId])
+}
+
+model GroupMessageReadReceipt {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+
+  message GroupMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId])
 }
