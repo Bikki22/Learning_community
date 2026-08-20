@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { UserController } from "./user.controller";
 import { requireUser } from "../../middlewares/auth.middleware";
-import { authorize, requireModerator } from "../../middlewares/authorize.middleware";
+import {
+  authorize,
+  requireModerator,
+} from "../../middlewares/authorize.middleware";
 
 const router = Router();
 const userController = new UserController();
@@ -51,7 +54,11 @@ router.get("/:id/friends", userController.listFriends);
 
 // Auth-protected routes
 router.get("/me", requireUser, userController.getMe);
-router.get("/friend-requests/pending", requireUser, userController.listPendingFriendRequests);
+router.get(
+  "/friend-requests/pending",
+  requireUser,
+  userController.listPendingFriendRequests,
+);
 
 // Profile update routes
 router.patch("/profile", requireUser, userController.updateProfile);
@@ -63,9 +70,21 @@ router.delete("/:id/follow", requireUser, userController.unfollowUser);
 
 // Friendship routes
 router.post("/friend-requests", requireUser, userController.sendFriendRequest);
-router.post("/friend-requests/:friendshipId/accept", requireUser, userController.acceptFriendRequest);
-router.post("/friend-requests/:friendshipId/reject", requireUser, userController.rejectFriendRequest);
-router.delete("/friend-requests/:friendshipId", requireUser, userController.cancelFriendRequest);
+router.post(
+  "/friend-requests/:friendshipId/accept",
+  requireUser,
+  userController.acceptFriendRequest,
+);
+router.post(
+  "/friend-requests/:friendshipId/reject",
+  requireUser,
+  userController.rejectFriendRequest,
+);
+router.delete(
+  "/friend-requests/:friendshipId",
+  requireUser,
+  userController.cancelFriendRequest,
+);
 router.delete("/friends/:friendshipId", requireUser, userController.unfriend);
 
 // User enhancement routes

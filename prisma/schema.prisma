@@ -30,6 +30,12 @@ enum FriendshipStatus {
   ACCEPTED
 }
 
+enum CommunityMemberRole {
+  MEMBER
+  MODERATOR
+  ADMIN
+}
+
 model User {
   id             String    @id @default(cuid())
   email          String    @unique
@@ -54,6 +60,12 @@ model User {
   sentFriendships     Friendship[] @relation("UserFriendshipsSent")
   receivedFriendships Friendship[] @relation("UserFriendshipsReceived")
   badges              UserBadge[]
+  communitiesCreated  Community[]       @relation("CommunityCreator")
+  communityMembers    CommunityMember[]
+  posts               Post[]
+  comments            Comment[]
+  postLikes           PostLike[]
+  commentLikes        CommentLike[]
 
   @@index([xp])
   @@index([createdAt])
@@ -116,4 +128,122 @@ model Friendship {
 
   @@unique([requesterId, addresseeId])
   @@index([addresseeId])
+}
+
+model Community {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  isPrivate   Boolean   @default(false)
+  createdById String
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdBy User              @relation("CommunityCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  members   CommunityMember[]
+  channels  Channel[]
+  posts     Post[]
+
+  @@index([slug])
+  @@index([createdAt])
+}
+
+model CommunityMember {
+  id          String              @id @default(cuid())
+  communityId String
+  userId      String
+  role        CommunityMemberRole @default(MEMBER)
+  joinedAt    DateTime            @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+  @@index([userId])
+}
+
+model Channel {
+  id          String   @id @default(cuid())
+  communityId String
+  name        String
+  slug        String
+  description String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  posts     Post[]
+
+  @@unique([communityId, slug])
+  @@index([communityId])
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  communityId String
+  channelId   String?
+  authorId    String
+  title       String?
+  content     String
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  community Community  @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  channel   Channel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments  Comment[]
+  likes     PostLike[]
+
+  @@index([communityId, createdAt])
+  @@index([channelId])
+  @@index([authorId])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  postId    String
+  authorId  String
+  content   String
+  parentId  String?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  post    Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent  Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies Comment[]     @relation("CommentReplies")
+  likes   CommentLike[]
+
+  @@index([postId, createdAt])
+  @@index([authorId])
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
 }
